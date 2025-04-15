@@ -4,53 +4,47 @@
 #include <map>
 #include <string>
 #include <sys/_types/_int64_t.h>
+#include <sys/_types/_u_short.h>
 #include <thread>
 #include <vector>
 #include <cstdlib>
-#include "include/renderer.h"
-// get time
 #include <ctime>
+#include "include/renderer.h"
+#include "include/grid_loader.h"
 
 using namespace std;
-Renderer* renderer = new Renderer();
-GameState gameState = {
- .gameIteration = 0,
-};
+
+GridLoader gridLoader;
+Renderer renderer;
+GameState gameState;
+
 
 void initialise() {
- int numRandomCells = 500; 
- /*int gridWidth = INT64_MAX;*/
- /*int gridHeight = INT64_MAX;*/
-
-  int gridWidth = 50; // Set a reasonable width for the gridHeight
-  int gridHeight = 50; // Set a reasonable height for the gridHeight
-
-  // Seed the random number generator
-  std::srand(static_cast<unsigned int>(std::time(0)));
-
-  for (int i = 0; i < numRandomCells; ++i) {
-    int64_t x = rand() % gridWidth;
-    int64_t y = rand() % gridHeight;
-    gameState.bufferA[std::make_pair(x, y)] = true; // Mark the cell as occupied
-  }
+  gridLoader.loadStdin(gameState.currentBuffer(), true);
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 }
 
-
+struct CellState {
+  uint8_t neighborCount;
+  bool isAlive;
+};
 
 void step() {
-
-  Grid* currentBuffer = gameState.gameIteration % 2 == 0 ? &gameState.bufferA : &gameState.bufferB; 
-  Grid* nextBuffer = gameState.gameIteration % 2 == 0 ? &gameState.bufferB : &gameState.bufferA;
-
   // Clear the next buffer
+
+  const Grid* currentBuffer = gameState.currentBuffer();
+  Grid* nextBuffer = gameState.nextBuffer();
+
   nextBuffer->clear();
 
-  std::unordered_map<std::pair<int64_t, int64_t>, int, pair_hash> tempBuf;
+  std::unordered_map<std::pair<int64_t, int64_t>, CellState, pair_hash> tempBuf;
 
   // First pass: Accumulate neighbor counts for each live cell.
-  for (auto& cell : *currentBuffer) {
+  for (const auto& cell : *currentBuffer) {
     int64_t x = cell.first.first;
     int64_t y = cell.first.second;
+
+    tempBuf[{x, y}].isAlive = true;
     
     // Instead of initializing the count for the cell itself,
     // just update its 8 neighbors.
@@ -63,38 +57,29 @@ void step() {
           continue; // Skip out-of-bounds cells
         }
 
-        tempBuf[{x+dx, y+dy}] += 1;
+        tempBuf[{x+dx, y+dy}].neighborCount += 1;
       }
     }
   }
 
   // Second pass: Apply the Game of Life rules.
-  for (auto& cell : tempBuf) {
-    int64_t x = cell.first.first;
-    int64_t y = cell.first.second;
-    int count = cell.second;
-    bool isAliveCurrent = (currentBuffer->find(std::make_pair(x, y)) != currentBuffer->end());
-    if (isAliveCurrent) {
-      // A live cell survives if it has 2 or 3 neighbors.
-      if (count == 2 || count == 3) {
-        (*nextBuffer)[{x, y}] = true;
-      }
-    }
-    else {
-      // A dead cell becomes alive if it has exactly 3 neighbors.
-      if (count == 3) {
-        (*nextBuffer)[{x, y}] = true;
-      }
+  for (const auto& cell : tempBuf) {
+    const auto& pos = cell.first;
+    const auto& info = cell.second;
+    
+    if ((info.isAlive && (info.neighborCount == 2 || info.neighborCount == 3)) || 
+        (!info.isAlive && info.neighborCount == 3)) {
+      (*nextBuffer)[pos] = true;
     }
   }
 
-  gameState.gameIteration++;
+  gameState.incrementIteration();
 }
 
 int update() {
  
   step();
-  std::cout << std::endl << "Game Iteration " << gameState.gameIteration <<  std::endl;
+  std::cout << std::endl << "Game Iteration " << gameState.currentIteration() <<  std::endl;
 
   return 0;
 }
@@ -104,9 +89,9 @@ int main() {
   initialise();
 
   while (true) {
-    renderer->clearScreen(); 
+    renderer.clearScreen(); 
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    renderer->render(0, 0, 50, 50, gameState.gameIteration % 2 == 0 ? &gameState.bufferA : &gameState.bufferB);
+    renderer.render(0, 0, 50, 50, gameState.currentBuffer());
     update();
     std::this_thread::sleep_for(std::chrono::milliseconds(20));
   }

@@ -1,0 +1,76 @@
+#Life 1.06
+#D Multiple gliders in 0,0 to 50,50 region
+#D Created by Claude on April 15, 2025
+#N Glider pattern
+#R B3/S23
+#O Conway's Game of Life
+
+# Glider 1 - standard orientation
+1 1
+2 2
+3 0
+3 1
+3 2
+
+# Glider 2 - different orientation at position (10,5)
+10 5
+11 6
+12 4
+12 5
+12 6
+
+# Glider 3 - at position (20,15)
+20 15
+21 16
+22 14
+22 15
+22 16
+
+# Glider 4 - at position (30,25)
+30 25
+31 26
+32 24
+32 25
+32 26
+
+# Glider 5 - at position (15,35)
+15 35
+16 36
+17 34
+17 35
+17 36
+
+# Glider 6 - at position (40,40)
+40 40
+41 41
+42 39
+42 40
+42 41
+
+# Glider 7 - at position (5,20)
+5 20
+6 21
+7 19
+7 20
+7 21
+
+# Glider 8 - at position (25,45)
+25 45
+26 46
+27 44
+27 45
+27 46
+
+# Glider 9 - at position (45,10)
+45 10
+46 11
+47 9
+47 10
+47 11
+
+# Glider 10 - at position (35,30)
+35 30
+36 31
+37 29
+37 30
+37 31

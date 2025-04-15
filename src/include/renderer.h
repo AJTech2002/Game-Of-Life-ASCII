@@ -7,6 +7,6 @@
 
 class Renderer {
 public:
-    void render(int x, int y, int width, int height, Grid* grid);
+    void render(int x, int y, int width, int height, const Grid* grid);
     void clearScreen();
 };
