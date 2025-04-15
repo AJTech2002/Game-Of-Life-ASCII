@@ -1,5 +1,4 @@
 #pragma once
-
 #include <cstdint>
 #include <utility>        // for std::pair
 #include <unordered_map> // for std::unordered_map
