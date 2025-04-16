@@ -18,7 +18,7 @@ namespace GameOfLife {
     nextBuffer->clear();
 
     // Temporary buffer to track cell states and neighbor counts
-    std::unordered_map<std::pair<int64_t, int64_t>, CellState, pair_hash> tempBuf;
+    std::unordered_map<std::pair<int64_t, int64_t>, CellState, pair_hash, pair_equal> tempBuf;
     tempBuf.reserve(currentBuffer->size() * 2); // Reserve space for live cells and their neighbors
 
     // First pass: Accumulate neighbor counts for each live cell and its neighbors
