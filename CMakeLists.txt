@@ -13,9 +13,9 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # Source files
 set(SOURCES
     src/main.cpp
-    src/grid_loader.cpp
-    src/renderer.cpp
-    src/simulation.cpp
+    src/gameoflife/grid_loader.cpp
+    src/gameoflife/renderer.cpp
+    src/gameoflife/simulation.cpp
 )
 
 # Main executable

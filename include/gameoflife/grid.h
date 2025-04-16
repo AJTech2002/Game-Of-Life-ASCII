@@ -11,7 +11,7 @@ namespace GameOfLife {
  * Hash function for std::pair<int64_t, int64_t> to use in unordered_map
  */
 struct pair_hash {
-    std::size_t operator()(const std::pair<int64_t, int64_t>& p) const {
+    std::size_t operator()(const std::pair<int64_t, int64_t>& p) const noexcept {
         std::size_t seed = 0;
         seed ^= std::hash<int64_t>()(p.first) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
         seed ^= std::hash<int64_t>()(p.second) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
@@ -23,7 +23,7 @@ struct pair_hash {
  * Equality function for std::pair<int64_t, int64_t> to use in unordered_map
  */
 struct pair_equal {
-    bool operator()(const std::pair<int64_t, int64_t>& p1, const std::pair<int64_t, int64_t>& p2) const {
+    bool operator()(const std::pair<int64_t, int64_t>& p1, const std::pair<int64_t, int64_t>& p2) const noexcept {
         return p1.first == p2.first && p1.second == p2.second;
     }
 };
@@ -39,8 +39,8 @@ using Grid = std::unordered_map<std::pair<int64_t, int64_t>, bool, pair_hash, pa
  * Cell state for internal simulation use
  */
 struct CellState {
-    uint8_t neighborCount;
-    bool isAlive;
+    uint8_t neighborCount = 0;
+    bool isAlive = false;
 };
 
 /**
@@ -56,13 +56,21 @@ public:
     /**
      * Constructor initializes game iteration to 0
      */
-    GameState() : gameIteration(0) {}
+    GameState() noexcept : gameIteration(0) {}
     
     /**
      * Get the current active grid buffer
      * @return Pointer to the current grid
      */
-    Grid* currentBuffer() {
+    Grid* currentBuffer() noexcept {
+        return gameIteration % 2 == 0 ? &bufferA : &bufferB;
+    }
+
+    /**
+     * Get the current active grid buffer (const version)
+     * @return Const pointer to the current grid
+     */
+    const Grid* currentBuffer() const noexcept {
         return gameIteration % 2 == 0 ? &bufferA : &bufferB;
     }
 
@@ -70,14 +78,14 @@ public:
      * Get the next grid buffer for writing
      * @return Pointer to the next grid
      */
-    Grid* nextBuffer() {
+    Grid* nextBuffer() noexcept {
         return gameIteration % 2 == 0 ? &bufferB : &bufferA;
     }
 
     /**
      * Increment the game iteration counter
      */
-    void incrementIteration() {
+    void incrementIteration() noexcept {
         gameIteration++;
     }
 
@@ -85,9 +93,9 @@ public:
      * Get the current iteration number
      * @return The current iteration
      */
-    int currentIteration() const {
+    int currentIteration() const noexcept {
         return gameIteration;
     }
 };
 
-} // namespace GameOfLife
+}

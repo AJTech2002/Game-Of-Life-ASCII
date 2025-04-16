@@ -10,16 +10,13 @@
 
 // Structure to hold command-line options
 struct ProgramOptions {
-  bool debugMode;
-  int iterations;
+  bool debugMode = false;
+  int iterations = 10;
 };
 
 // Function to parse command-line arguments
-ProgramOptions parseArguments(int argc, char* argv[]) {
-  ProgramOptions options = {
-    .debugMode = false,
-    .iterations = 10,
-  };
+ProgramOptions parseArguments(int argc, const char* const argv[]) noexcept {
+  ProgramOptions options;
 
   for (int i = 1; i < argc; i++) {
     if (strcmp(argv[i], "-d") == 0) {
@@ -30,7 +27,6 @@ ProgramOptions parseArguments(int argc, char* argv[]) {
           options.iterations = std::stoi(argv[i + 1]);
         } catch (const std::exception& e) {
           std::cerr << "Error: Invalid number format for iterations" << std::endl;
-          options.iterations = 10; // Default value
         }
         i++; // Skip the next argument (the number)
       } 
@@ -44,21 +40,23 @@ int main(int argc, char* argv[]) {
   using namespace GameOfLife;
 
   // Parse command line arguments
-  ProgramOptions options = parseArguments(argc, argv);
+  const ProgramOptions options = parseArguments(argc, argv);
 
   // Initialize components
   GridLoader gridLoader;
   Renderer renderer;
   GameState gameState;
 
-  // Load initial grid
-
-  gridLoader.loadStdin(gameState.currentBuffer());
+  // Load initial grid from stdin
+  gridLoader.loadStdin(*gameState.currentBuffer());
 
   // Only sleep in debug mode
   if (options.debugMode) {
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   }
+
+  constexpr int renderWidth = 50;
+  constexpr int renderHeight = 50;
 
   // Run simulation for specified number of iterations
   for (int i = 0; i < options.iterations; i++) {
@@ -66,27 +64,32 @@ int main(int argc, char* argv[]) {
     if (options.debugMode) {
       renderer.clearScreen();
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
-      renderer.render(0, 0, 50, 50, gameState.currentBuffer());
+      renderer.render(0, 0, renderWidth, renderHeight, *gameState.currentBuffer());
     }
 
     // Update simulation
     step(gameState);
 
     // Only show iteration info and sleep in debug mode
-    if (options.debugMode) { // Don't sleep after the last iteration
+    if (options.debugMode) {
       std::cout << "Game Iteration " << gameState.currentIteration() << std::endl;
       std::this_thread::sleep_for(std::chrono::milliseconds(20));
     }
   }
 
+  const Grid& finalGrid = *gameState.currentBuffer();
+
+  // Handle Outputs 
+
   if (options.debugMode) {
-    std::cout << "\nFinal grid state:" << std::endl;
-    renderer.render(0, 0, 50, 50, gameState.currentBuffer());
+    renderer.render(0, 0, renderWidth, renderHeight, finalGrid);
   } else {
-    // In non-debug mode, output the final state in a format suitable for piping
+    // In non-debug mode, output the final state in Life 1.6 format
     std::cout << "# Life 1.6 Output" << std::endl;
-    for (const auto& cell : *gameState.currentBuffer()) {
-      std::cout << cell.first.first << " " << cell.first.second << std::endl;
+    for (const auto& [coords, alive] : finalGrid) {
+      if (alive) {
+        std::cout << coords.first << " " << coords.second << std::endl;
+      }
     }
   }
 

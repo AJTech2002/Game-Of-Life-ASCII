@@ -30,10 +30,10 @@ The Game of Life program reads input from standard input (stdin) in Life 1.6 for
 
 ```bash
 # Run with input from a file
-./game_of_life < ../test/inputs/gliders.txt
+./game_of_life < ./test/inputs/gliders.txt
 
 # Or pipe input from another command
-cat ../test/inputs/gliders.txt | ./game_of_life
+cat ./test/inputs/gliders.txt | ./game_of_life
 ```
 
 ### Input Format
@@ -61,13 +61,13 @@ Examples:
 
 ```bash
 # Run in debug mode with default 10 iterations
-./game_of_life -d < ../test/inputs/gliders.txt
+./game_of_life -d < ./test/inputs/gliders.txt
 
-# Run 20 iterations without debug output
-./game_of_life -i 20 < ../test/inputs/gliders.txt
+# Run 20 iterations without debug output, and recieve Life 1.6 Output in STDOUT
+./game_of_life -i 20 < ./test/inputs/gliders.txt
 
 # Run 5 iterations in debug mode
-./game_of_life -d -i 5 < ../test/inputs/gliders.txt
+./game_of_life -d -i 5 < ./test/inputs/gliders.txt
 ```
 
 ### Output
@@ -81,7 +81,8 @@ After building the project, you can run the automated tests to verify that every
 
 ```bash
 # From the build directory
-./test/test_gameoflife.sh
+./test/test_gliders.sh
+./test/test_edge.sh
 ```
 
 This test script:
@@ -100,7 +101,5 @@ This test script:
 - Uses double-buffering for efficient state updates
 - Implements sparse grid representation for infinite universe
 - Separates rendering from simulation logic
+- Supports validation at edge of INT64 
 
-## License
-
-[MIT License](LICENSE)
