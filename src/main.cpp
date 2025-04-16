@@ -1,98 +1,94 @@
-#include <algorithm>
-#include <chrono>
 #include <iostream>
-#include <map>
-#include <string>
-#include <sys/_types/_int64_t.h>
-#include <sys/_types/_u_short.h>
 #include <thread>
-#include <vector>
-#include <cstdlib>
-#include <ctime>
-#include "include/renderer.h"
-#include "include/grid_loader.h"
+#include <chrono>
+#include <string>
+#include <cstring>
+#include "gameoflife/grid.h"
+#include "gameoflife/renderer.h"
+#include "gameoflife/grid_loader.h"
+#include "gameoflife/simulation.h"
 
-using namespace std;
-
-GridLoader gridLoader;
-Renderer renderer;
-GameState gameState;
-
-
-void initialise() {
-  gridLoader.loadStdin(gameState.currentBuffer(), true);
-  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-}
-
-struct CellState {
-  uint8_t neighborCount;
-  bool isAlive;
+// Structure to hold command-line options
+struct ProgramOptions {
+  bool debugMode;
+  int iterations;
 };
 
-void step() {
-  // Clear the next buffer
+// Function to parse command-line arguments
+ProgramOptions parseArguments(int argc, char* argv[]) {
+  ProgramOptions options = {
+    .debugMode = false,
+    .iterations = 10,
+  };
 
-  const Grid* currentBuffer = gameState.currentBuffer();
-  Grid* nextBuffer = gameState.nextBuffer();
-
-  nextBuffer->clear();
-
-  std::unordered_map<std::pair<int64_t, int64_t>, CellState, pair_hash> tempBuf;
-
-  // First pass: Accumulate neighbor counts for each live cell.
-  for (const auto& cell : *currentBuffer) {
-    int64_t x = cell.first.first;
-    int64_t y = cell.first.second;
-
-    tempBuf[{x, y}].isAlive = true;
-    
-    // Instead of initializing the count for the cell itself,
-    // just update its 8 neighbors.
-    for (int dx = -1; dx <= 1; ++dx) {
-      for (int dy = -1; dy <= 1; ++dy) {
-        if (dx == 0 && dy == 0) continue; // Skip the cell itself
-
-        if (x + dx < -INT64_MAX || x + dx > INT64_MAX ||
-            y + dy < -INT64_MAX || y + dy > INT64_MAX) {
-          continue; // Skip out-of-bounds cells
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "-d") == 0) {
+      options.debugMode = true;
+    } else if (strcmp(argv[i], "-i") == 0) {
+      if (i + 1 < argc) {
+        try {
+          options.iterations = std::stoi(argv[i + 1]);
+        } catch (const std::exception& e) {
+          std::cerr << "Error: Invalid number format for iterations" << std::endl;
+          options.iterations = 10; // Default value
         }
-
-        tempBuf[{x+dx, y+dy}].neighborCount += 1;
-      }
+        i++; // Skip the next argument (the number)
+      } 
     }
   }
 
-  // Second pass: Apply the Game of Life rules.
-  for (const auto& cell : tempBuf) {
-    const auto& pos = cell.first;
-    const auto& info = cell.second;
-    
-    if ((info.isAlive && (info.neighborCount == 2 || info.neighborCount == 3)) || 
-        (!info.isAlive && info.neighborCount == 3)) {
-      (*nextBuffer)[pos] = true;
-    }
-  }
-
-  gameState.incrementIteration();
+  return options;
 }
 
-int update() {
- 
-  step();
-  std::cout << std::endl << "Game Iteration " << gameState.currentIteration() <<  std::endl;
+int main(int argc, char* argv[]) {
+  using namespace GameOfLife;
+
+  // Parse command line arguments
+  ProgramOptions options = parseArguments(argc, argv);
+
+  // Initialize components
+  GridLoader gridLoader;
+  Renderer renderer;
+  GameState gameState;
+
+  // Load initial grid
+
+  gridLoader.loadStdin(gameState.currentBuffer());
+
+  // Only sleep in debug mode
+  if (options.debugMode) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+  }
+
+  // Run simulation for specified number of iterations
+  for (int i = 0; i < options.iterations; i++) {
+    // Only render in debug mode
+    if (options.debugMode) {
+      renderer.clearScreen();
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+      renderer.render(0, 0, 50, 50, gameState.currentBuffer());
+    }
+
+    // Update simulation
+    step(gameState);
+
+    // Only show iteration info and sleep in debug mode
+    if (options.debugMode) { // Don't sleep after the last iteration
+      std::cout << "Game Iteration " << gameState.currentIteration() << std::endl;
+      std::this_thread::sleep_for(std::chrono::milliseconds(20));
+    }
+  }
+
+  if (options.debugMode) {
+    std::cout << "\nFinal grid state:" << std::endl;
+    renderer.render(0, 0, 50, 50, gameState.currentBuffer());
+  } else {
+    // In non-debug mode, output the final state in a format suitable for piping
+    std::cout << "# Life 1.6 Output" << std::endl;
+    for (const auto& cell : *gameState.currentBuffer()) {
+      std::cout << cell.first.first << " " << cell.first.second << std::endl;
+    }
+  }
 
   return 0;
-}
-
-int main() {
-
-  initialise();
-
-  while (true) {
-    renderer.clearScreen(); 
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-    renderer.render(0, 0, 50, 50, gameState.currentBuffer());
-    update();
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
-  }
 }
